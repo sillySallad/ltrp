@@ -32,7 +32,10 @@ end
 
 TestOutput = {}
 
-local function outputTest(testname, inputs, output)
+local function outputTest(testname, output, inputs)
+	if type(inputs) ~= 'table' then
+		inputs = {inputs}
+	end
     for k,v in ipairs(inputs) do
         local i = v
         TestOutput[("test_%s_%i"):format(testname, k)] = function(self)
@@ -43,25 +46,29 @@ end
 
 -- FUNCTIONS
 
-	outputTest("empty_function", {
-		"func f();",
-		"func f() {}",
-	}, "local f function f() end")
-	outputTest("emty_glob_function", {
-		"glob func f();",
-		"glob func f() {}",
-	}, "function _ENV.f() end")
+outputTest("empty_function",
+	"local f function f() end", {
+	"func f();",
+	"func f() {}",
+})
+outputTest("emty_glob_function",
+	"function _ENV.f() end", {
+	"glob func f();",
+	"glob func f() {}",
+})
 
-	outputTest("simple_function_ret_number", {
-		"func f() ret 42",
-		"func f() ret 42;",
-		"func f() { ret 42 }"
-	}, "local f function f() return 42 end")
-	outputTest("simple_glob_function_ret_number", {
-		"glob func f() ret 42",
-		"glob func f() ret 42;",
-		"glob func f() { ret 42 }"
-	}, "function _ENV.f() return 42 end")
+outputTest("simple_function_ret_number",
+	"local f function f() return 42 end", {
+	"func f() ret 42",
+	"func f() ret 42;",
+	"func f() { ret 42 }",
+})
+outputTest("simple_glob_function_ret_number",
+	"function _ENV.f() return 42 end", {
+	"glob func f() ret 42",
+	"glob func f() ret 42;",
+	"glob func f() { ret 42 }",
+})
 
 -- /FUNCTIONS
 
