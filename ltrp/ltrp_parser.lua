@@ -154,11 +154,11 @@ end
 
 function ast:postopstatement()
 	local rel = self "push"
-	local s = self:post_only_expression()
-	if s and s.type == "postincrement" or s.type == "postdecrement" then
-		s.isstatement = true
+	local expr = self:post_only_expression()
+	if expr and (expr.type == "postincrement" or expr.type == "postdecrement") then
+		expr.isstatement = true
 		self "pop"
-		return s
+		return expr
 	end
 	return self "pull"
 end
