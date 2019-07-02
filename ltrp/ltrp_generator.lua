@@ -496,9 +496,19 @@ function node(t, ctx)
 	elseif ty == "globalstatement" then
 		for k,v in ipairs(t.vars) do
 			if ctx.locals[v] then
-				complain(ctx, t.token, "variable %s is already local, and can't be made global", format(v))
+				complain(ctx, t.token, "variable %s is already local, and can't be made global", v)
+			else
+				ctx.globals[v] = true
 			end
-			ctx.globals[v] = true
+		end
+		return ''
+	elseif ty == "varstatement" then
+		for k,v in ipairs(t.vars) do
+			if ctx.globals[v] then
+				complain(ctx, t.token, "variable %s is already global, and can't be made local", v)
+			else
+				ctx.locals[v] = true
+			end
 		end
 		return ''
 	elseif ty == "call" then

@@ -173,6 +173,22 @@ function ast:keywordstatement()
 		or self:breakstatement()
 		or self:importstatement()
 		or self:repeatuntilstatement()
+		or self:varstatement()
+end
+
+function ast:varstatement()
+	local rel = self "push"
+	if not self("ident", "var") then return self "pull" end
+	local vars = list()
+	repeat
+		vars(self:expect "ident")
+	until not self "comma"
+	self "pop"
+	return {
+		type = "varstatement",
+		vars = vars,
+		token = rel,
+	}
 end
 
 function ast:repeatuntilstatement()
