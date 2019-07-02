@@ -4,6 +4,10 @@ local indentchar = "\t"
 -- local function tempname(i) return i == 0 and "temp" or "tmp" .. i end
 local function tempname(i) return "temp" .. i end
 
+local function complain(ctx, token, msgptrn, ...)
+	ctx.shared.errors(token:makecomplaint(msgptrn:format(...) .. ":"))
+end
+
 local function islid(t) -- literal or identifier
 	return t.type == "identifier"
 		or t.type == "number"
@@ -263,9 +267,7 @@ function node(t, ctx)
 					o(tbl) '[' (key) '] = ' (tbl) '[' (key) ']'
 				end
 				return inc
-			else
-				ctx.shared.errors(("%s statement on %s-node"):format(t.type, t.value.type))
-			end
+			else complain(ctx, t.token, "attempt to perform a %s on a %s-node", t.type, t.value.type) end
 		else -- expression-mode
 			inc = inc and ' + 1\n' or ' - 1\n'
 			if t.value.type == "identifier" then
@@ -302,9 +304,7 @@ function node(t, ctx)
 					o(tbl) '[' (key) '] = ' (temp) (inc) (ctx.indent)
 				end
 				return temp
-			else
-				ctx.shared.errors(("%s expression on %s-node"):format(t.type, t.value.type))
-			end
+			else complain(ctx, t.token, "attempt to perform a %s on a %s-node", t.type, t.value.type) end
 		end
 	elseif ty == "preincrement" or ty == "predecrement" then
 		local inc = ty == "preincrement"
@@ -337,9 +337,7 @@ function node(t, ctx)
 					o(tbl) '[' (key) '] = ' (tbl) '[' (key) ']'
 				end
 				return inc
-			else
-				ctx.shared.errors(("%s statement on %s-node"):format(t.type, t.value.type))
-			end
+			else complain(ctx, t.token, "attempt to perform a %s on a %s-node", t.type, t.value.type) end
 		else -- expression-mode
 			inc = inc and ' + 1\n' or ' - 1\n'
 			if t.value.type == "identifier" then
@@ -376,9 +374,7 @@ function node(t, ctx)
 					o(tbl) '[' (key) '] = ' (temp) '\n' (ctx.indent)
 				end
 				return temp
-			else
-				ctx.shared.errors(("%s expression on %s-node"):format(t.type, t.value.type))
-			end
+			else complain(ctx, t.token, "attempt to perform a %s on a %s-node", t.type, t.value.type) end
 		end
 	elseif ty == "tableliteral" then
 		if t.keys.n == 0 then return '{}' end
@@ -435,7 +431,7 @@ function node(t, ctx)
 				local b,c = vartype(ctx, t.name)
 				if t.glob then
 					if b and c ~= "global" then
-						ctx.shared.errors(("attempt to make global function with local variable %s"):format(t.name))
+						complain(ctx, t.token, "attempt to make global function with local variable '%s'", t.name)
 					end
 					ctx.globals[t.name] = true
 					b,c = vartype(ctx, t.name)
@@ -500,7 +496,7 @@ function node(t, ctx)
 	elseif ty == "globalstatement" then
 		for k,v in ipairs(t.vars) do
 			if ctx.locals[v] then
-				error(("variable %s is already local, and can't be global"):format(v))
+				complain(ctx, t.token, "variable %s is already local, and can't be made global", format(v))
 			end
 			ctx.globals[v] = true
 		end
@@ -578,7 +574,7 @@ function node(t, ctx)
 			-- ugh, it's a bitop
 			local can = usebitop(ctx, t.op)
 			if not can then
-				ctx.shared.errors(t.token:makecomplaint(("attempted to use a bitop (%s) while bitops are not present:"):format(t.op)))
+				complain(ctx, t.token, "attempted to use a bitop (%s) while bitops are not present:", t.op)
 				return ''
 			end
 			if bit53 then
@@ -838,9 +834,7 @@ function node(t, ctx)
 			else
 				var(tbl) '[' (key) ']'
 			end
-		else
-			ctx.shared.errors(("%s with invalid lvalue %s"):format(t.type, t.var.type))
-		end
+		else complain(ctx, t.token, "compound assignment with invalid lvalue '%s'", t.type, t.var.type) end
 		local op = assert(onetoonebinops[t.op], t.op)
 		s(var) ' = ' (var) ' ' (op.symbol)
 		if t.val.type == "binop" and op.precedence > assert(onetoonebinops[t.val.op], t.val.op).precedence then
@@ -872,20 +866,16 @@ function node(t, ctx)
 				s '[' (temp) ']'
 			end
 			var = s
-		else
-			ctx.shared.errors(("%s with invalid lvalue %s"):format(t.type, t.var.type))
-		end
+		else complain(ctx, t.token, "compound assignment with invalid lvalue '%s'", t.type, t.var.type) end
 		if t.isstatement then
-			ctx.shared.errors(("<%s>.isstatement == true, but case is not implemented"):format(t.type))
+			complain(ctx, t.token, "<%s>.isstatement == true, but case is not implemented", t.type)
 		else
 			local temp = Temp(ctx)
 			local op = assert(onetoonebinops[t.op], t.op)
 			o(temp) ' = ' (var) ' ' (op.symbol) ' ' (node(t.right, ctx)) '\n' (ctx.indent)
 			o(var) ' = ' (temp) '\n' (ctx.indent)
 			return temp
-			-- error "not finished"
 		end
-		-- error "not finished"
 	elseif ty == "repeatuntil" then
 		local o = ctx.out
 		o 'repeat\n'
@@ -925,7 +915,7 @@ function node(t, ctx)
 		end
 	elseif ty == "vararg" then
 		if not ctx.vararg then
-			ctx.shared.errors(t.token:makecomplaint("cannot use '...' outside of vararg function"))
+			complain(ctx, t.token, "cannot use '...' outside of vararg function")
 		end
 		return '...'
 	elseif ty == "not" or ty == "negate" or ty == "len" then
@@ -947,7 +937,7 @@ function node(t, ctx)
 		return "break"
 	elseif ty == "nop" then return ''
 	else
-		ctx.shared.errors(("unknown node type: %q"):format(t.type))
+		complain(ctx, t.token, "unknown node type %q", t.type)
 		return ''
 	end
 end
