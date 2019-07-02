@@ -41,16 +41,29 @@ local function outputTest(testname, inputs, output)
     end
 end
 
-outputTest("empty_function", {
-	"func f();",
-	"func f() {}",
-}, "local f function f() end")
+-- FUNCTIONS
 
-outputTest("simple_function_ret_number", {
-	"func f() ret 42",
-	"func f() ret 42;",
-	"func f() { ret 42 }"
-}, "local f function f() return 42 end")
+	outputTest("empty_function", {
+		"func f();",
+		"func f() {}",
+	}, "local f function f() end")
+	outputTest("emty_glob_function", {
+		"glob func f();",
+		"glob func f() {}",
+	}, "function _ENV.f() end")
+
+	outputTest("simple_function_ret_number", {
+		"func f() ret 42",
+		"func f() ret 42;",
+		"func f() { ret 42 }"
+	}, "local f function f() return 42 end")
+	outputTest("simple_glob_function_ret_number", {
+		"glob func f() ret 42",
+		"glob func f() ret 42;",
+		"glob func f() { ret 42 }"
+	}, "function _ENV.f() return 42 end")
+
+-- /FUNCTIONS
 
 -- function TestOutput:test_empty_function()
 -- 	assertOutput({
