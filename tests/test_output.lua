@@ -14,7 +14,7 @@ local function trim(str)
 end
 
 local function filter(str)
-	str = trim(str):gsub('\n%s+', '\n')
+	str = trim(str):gsub('%s*\n%s*', '\n')
 	str = str:gsub('\n', ' ')
 	return str
 end
@@ -71,6 +71,20 @@ outputTest("simple_glob_function_ret_number",
 })
 
 -- /FUNCTIONS
+
+-- VARIABLE DECLARATIONS
+
+outputTest("simple_multi_assign_numbers",
+	[[local a, b, c
+	a, b, c = 1, 2, 3]], {
+	"a, b, c = 1, 2, 3"
+})
+outputTest("simple_glob_multi_assign_numbers",
+	"_ENV.a, _ENV.b, _ENV.c = 1, 2, 3", {
+	"glob a, b, c; a, b, c = 1, 2, 3"
+})
+
+-- /VARIABLE DECLARATIONS
 
 -- function TestOutput:test_empty_function()
 -- 	assertOutput({
