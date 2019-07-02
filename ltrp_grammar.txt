@@ -1,0 +1,97 @@
+ident = /[%a_][%w_]*/
+
+statement = (keywordstatement
+	| compoundassignmentstatement
+	| assignstatement
+	| call
+	| post_op), [';'] | ';'
+
+keywordstatement
+	= functionstatement
+	| returnstatement
+	| globalstatement
+	| ifstatement
+	| forstatement
+	| whilestatement
+	| 'break'
+	| importstatement
+	| repeatuntilstatement
+
+returnstatement = 'ret', expression, {',', expression}
+
+globalstatement = 'glob', ident, {',', ident}
+
+ifstatement = 'if', expression, [':'], statement
+
+// the 'range' for loop only *requires* a single value, which is the end;
+// both the start and step default to 1.
+// for i = a       -> for i = 1, a do
+// for i = a, b    -> for i = a, b do
+// for i = a, b, c -> for i = a, b, c do
+forstatement = 'for', ident, '=', expression, [',', expression, [',', expression]], [':'], statement
+
+whilestatement = 'while', expression, [':'], statement
+
+repeatuntilstatement = 'repeat', statement, 'until', expression
+
+importstatement = 'from', (ident, 'import' | expression, 'use'), [ident, ['as', ident], {ident, ['as', ident]}]
+
+functionstatement = 'func', [ident, ('.' | ':')], ident, params, statement
+	| 'glob', 'func', ident, params, statement
+functionexpression = 'func', params, statement
+
+params = '(', '...' | [ident, {',', ident}, [',', '...']], ')'
+
+statements = '{', {statement}, '}'
+
+compoundassignmentstatement = lvalue, onetoonebinop, '=', expression
+
+onetoonebinop = '+' | '-' | '*' | '/' | '%' | '..'
+
+lvalue = ident | tableindex
+
+tableindex = (post_only_expression | '(', expression, ')'), ('[', expression, ']' | '.', literal)
+
+post_only_expression = lvalue, ('++' | '--'), {post_expression}
+	| bottomexpression, {post_expression}
+
+post_expression = tableindex | methodcall | call
+
+bottomexpression = ident | literal | '...' | functionexpression
+
+literal = string | number | table | 'true' | 'false' | 'nil'
+
+// the ? is custom syntax, and means it's optional only as the last item
+// both "@{ a, b, }" and "@{ a, b }" are valid, but "@{ a b }" is not
+table = '@{', {(expression | (ident, '=', expression) | ('[', expression, ']', '=', expression)), (',' | ';')?}, '}'
+
+assignstatement = lvalue, {',', lvalue}, '=', expression, {',', expression}
+
+call = post_only_expression, (arguments | parenlessarguments)
+
+arguments = '(', [expression, {',', expression}], ')'
+
+// the ! is custom syntax, and means that there must not be this token at this position
+// a parenless call must have it's first argument on the same line as the function
+parenlessarguments = !'\n', expression, {',', expression}
+
+expression = binop_or
+
+binop_or = binop_and, {'or', binop_and}
+binop_or = binop_compareop, {'and', compareop}
+compareop = binop_concat, {compareoperator, binop_concat}
+binop_concat = binop_sum, {'..', binop_sum}
+binop_sum = binop_prod, {('+' | '-'), binop_prod}
+binop_prod = binop_pow, {('+' | '-'), binop_pow}
+binop_pow = pre_expression, {('+' | '-'), pre_expression}
+
+compareoperator = '==' | '!=' | '~=' | '<=' | '>=' | '<' | '>'
+
+pre_expression = paren_expression
+	| pre_expr_unop
+	| post_only_expression
+
+paren_expression = '(', expression, ')'
+
+pre_expr_unop = ('++' | '--'), lvalue
+	| ('-' | 'not' | '!'), pre_expression
