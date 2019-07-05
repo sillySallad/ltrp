@@ -294,10 +294,28 @@ local function lex(src)
 					elseif c == 't' then c = '\t'
 					elseif c == "'" then c = "'"
 					elseif c == '"' then c = '"'
-					elseif c == '0' then c = '\0'
-					-- elseif c == 'x' then c = ("x%02X"):format(tonumber(get(src, p+1, p+3), 16)) p=p+2
 					elseif c == 'x' then c = string.char(tonumber(get(src, p+1, p+3), 16)) p=p+2
-					else return nil, (("invalid string escape \\%s"):format(c)) end
+					else
+						local escapebegin = p-1
+						if digit(c, 10) then
+							local n = 0
+							for i = 1, 3 do
+								local d = digit(get(src, p), 10)
+								if not d then break end
+								p = p + 1
+								n = n * 10 + d
+							end
+							if n > 255 then
+								return nil, token(src, line, escapebegin, linestart, nil, get(src, escapebegin, p), nil)
+									:makecomplaint("decimal escape is too big:"), out
+							end
+							c = string.char(n)
+							p = p - 1
+						else
+							return nil, token(src, line, escapebegin, linestart, nil, get(src, escapebegin, p+1), nil)
+								:makecomplaint(("invalid string escape \\%s:"):format(c)), out
+						end
+					end
 					s(c)
 					q = p + 1
 				end
@@ -307,8 +325,12 @@ local function lex(src)
 			goto cont
 		end
 		
-		-- error(("%q"):format(src:sub(p, p+9)))
-		do return nil, ("lexer: invalid character in source string %q (0x%02X)"):format(get(src, p), get(src, p):byte()), out end
+		do
+			c = get(src, p)
+			return nil, token(src, line, p, linestart, nil, c, nil)
+				:makecomplaint(("invalid character in source string %q (0x%02X):")
+					:format(c, c:byte())), out
+		end
 		
 		::cont::
 	end
