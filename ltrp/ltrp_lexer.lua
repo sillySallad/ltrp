@@ -294,6 +294,7 @@ local function lex(src)
 					elseif c == 't' then c = '\t'
 					elseif c == "'" then c = "'"
 					elseif c == '"' then c = '"'
+					elseif c == '0' then c = '\0'
 					-- elseif c == 'x' then c = ("x%02X"):format(tonumber(get(src, p+1, p+3), 16)) p=p+2
 					elseif c == 'x' then c = string.char(tonumber(get(src, p+1, p+3), 16)) p=p+2
 					else return nil, (("invalid string escape \\%s"):format(c)) end
