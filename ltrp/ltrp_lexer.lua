@@ -64,6 +64,7 @@ local keywords = {
 	['while'] = "while", ['for'] = "for",
 	import = "import", use = "use",
 	func = "func", ret = "ret",
+	['goto'] = "goto",
 }
 
 local specialchars = {
@@ -73,6 +74,8 @@ local specialchars = {
 	[','] = "comma", ['.'] = "dot",
 	[':'] = "colon", [';'] = "semicolon",
 	['='] = "assign",
+	
+	['::'] = "labelpart",
 	
 	['#'] = "len",
 	

@@ -174,6 +174,34 @@ function ast:keywordstatement()
 		or self:importstatement()
 		or self:repeatuntilstatement()
 		or self:varstatement()
+		or self:gotostatement()
+		or self:labelstatement()
+end
+
+function ast:gotostatement()
+	local rel = self "push"
+	if not self "goto" then return self "pull" end
+	local label = self:expect "ident"
+	self "pop"
+	return {
+		type = "gotostatement",
+		value = label,
+		token = rel,
+	}
+end
+
+function ast:labelstatement()
+	local rel = self "push"
+	if not self "labelpart" then return self "pull" end
+	rel = self()
+	local name = self:expect "ident"
+	self:expect "labelpart"
+	self "pop"
+	return {
+		type = "label",
+		value = name,
+		token = rel,
+	}
 end
 
 function ast:varstatement()

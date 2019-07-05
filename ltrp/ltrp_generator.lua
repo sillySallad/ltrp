@@ -493,6 +493,10 @@ function node(t, ctx)
 			s(node(v, ctx))
 		end
 		return s
+	elseif ty == "gotostatement" then
+		return list() 'goto ' (t.value)
+	elseif ty == "label" then
+		return list() '::' (t.value) '::'
 	elseif ty == "globalstatement" then
 		for k,v in ipairs(t.vars) do
 			if ctx.locals[v] then
