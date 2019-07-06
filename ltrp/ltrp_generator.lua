@@ -46,8 +46,8 @@ end
 local function usebitop(ctx, op)
 	if vartype(ctx, op) then return true end
 	local config = ctx.shared.config
-	if not config.jitbit and not config.bit52 then return false end
-	if not config.bit53 then
+	if config.bit53 then return true end
+	if config.jitbit or config.bit52 then
 		u = ctx.shared.usedbitops
 		if not u[op] then
 			local c = ctx
@@ -62,8 +62,9 @@ local function usebitop(ctx, op)
 			c.locals[op] = true
 		end
 		u[op] = true
+		return true
 	end
-	return true
+	return false
 end
 
 local onetoonebinops = {
@@ -939,13 +940,20 @@ function node(t, ctx)
 			complain(ctx, t.token, "cannot use '...' outside of vararg function")
 		end
 		return '...'
-	elseif ty == "not" or ty == "negate" or ty == "len" then
-		local s = assert(unaryops[ty], ty).symbol
-		local n = node(t.value, ctx)
-		if lesserprecedence(t.value, t) then
-			return list()(s) '(' (n) ')'
+	elseif ty == "not" or ty == "negate" or ty == "len" or ty == "bnot" then
+		if ty == "bnot" and not ctx.shared.config.bit53 then
+			if not usebitop(ctx, 'bnot') then
+				complain(ctx, t.token, "attempted to use a bitop (%s) while bitops are not present:", t.op)
+			end
+			return list() 'bnot(' (node(t.value, ctx)) ')'
+		else
+			local s = assert(unaryops[ty], ty).symbol
+			local n = node(t.value, ctx)
+			if lesserprecedence(t.value, t) then
+				return list()(s) '(' (n) ')'
+			end
+			return list()(s)(n)
 		end
-		return list()(s)(n)
 	elseif ty == "nil" then
 		return 'nil'
 	elseif ty == "number" then
