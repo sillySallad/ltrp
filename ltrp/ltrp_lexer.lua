@@ -91,6 +91,7 @@ local specialchars = {
 	
 	['+'] = "add", ['-'] = "sub",
 	['*'] = "mul", ['/'] = "div", ['%'] = "mod",
+	['-/'] = "intdiv",
 	
 	['++'] = "increment", ['--'] = "decrement",
 	['**'] = "pow", ['//'] = "intdiv",

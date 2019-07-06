@@ -8,6 +8,14 @@ local function complain(ctx, token, msgptrn, ...)
 	ctx.shared.errors(token:makecomplaint(msgptrn:format(...) .. ":"))
 end
 
+local function shallowtablecopy(n)
+	local t = {}
+	for k,v in pairs(n) do
+		t[k] = v
+	end
+	return t
+end
+
 local function islid(t) -- literal or identifier
 	return t.type == "identifier"
 		or t.type == "number"
@@ -83,6 +91,10 @@ local onetoonebinops = {
 	-- unary: 11
 	pow = { symbol = "^", precedence = 12 },
 }
+
+if bit53 then
+	onetoonebinops.intdiv = { symbol = "//", precedence = 10 }
+end
 
 local bitops = {
 	bor = { symbol = "|", func = "bor", precedence = 4 },
@@ -620,6 +632,17 @@ function node(t, ctx)
 				token = t.token,
 			}, ctx)) '(' (node(t.left, ctx)) ', ' (node(t.right, ctx)) ')'
 			return s
+		end
+		if t.op == "intdiv" then
+			local floorf
+			local b,e = vartype(ctx, 'floor')
+			if b then
+				if e == 'global' then floorf = '_ENV.floor('
+				elseif e == 'local' then floorf = 'floor(' end
+			else floorf = 'math.floor(' end
+			local fake = shallowtablecopy(t)
+			fake.op = "div"
+			return list()(floorf)(node(fake, ctx)) ')'
 		end
 		error(("binop not 1:1 (%s)"):format(t.op))
 	elseif ty == "if" then
