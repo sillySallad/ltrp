@@ -43,24 +43,11 @@ local function Temp(ctx)
 	return temp
 end
 
-local canbit = true
-local bit53 = false
-local jitbit = false
-
-do
-	if _VERSION == "Lua 5.3" then
-		bit53 = true
-	elseif jit then
-		jitbit = true
-	else
-		canbit = false
-	end
-end
-
 local function usebitop(ctx, op)
 	if vartype(ctx, op) then return true end
-	if not canbit then return false end
-	if not bit53 then
+	local config = ctx.shared.config
+	if not config.jitbit and not config.bit52 then return false end
+	if not config.bit53 then
 		u = ctx.shared.usedbitops
 		if not u[op] then
 			local c = ctx
@@ -87,14 +74,11 @@ local onetoonebinops = {
 	sub = { symbol = "-", precedence = 9 },
 	mul = { symbol = "*", precedence = 10 },
 	div = { symbol = "/", precedence = 10 },
+	intdiv = { symbol = "//", precedence = 10 },
 	mod = { symbol = "%", precedence = 10 },
 	-- unary: 11
 	pow = { symbol = "^", precedence = 12 },
 }
-
-if bit53 then
-	onetoonebinops.intdiv = { symbol = "//", precedence = 10 }
-end
 
 local bitops = {
 	bor = { symbol = "|", func = "bor", precedence = 4 },
@@ -573,7 +557,7 @@ function node(t, ctx)
 		return ''
 	elseif ty == "binop" then
 		local op = onetoonebinops[t.op]
-		if op then
+		if op and (t.op ~= "intdiv" or ctx.shared.config.intdiv) then
 			local rightassociative = t.op == "pow" or t.op == "concat"
 			local s = list()
 			if lesserprecedence(t.left, t, rightassociative) then
@@ -603,7 +587,7 @@ function node(t, ctx)
 				complain(ctx, t.token, "attempted to use a bitop (%s) while bitops are not present:", t.op)
 				return ''
 			end
-			if bit53 then
+			if ctx.shared.config.bit53 then
 				local s = list()
 				if lesserprecedence(t.left, t) then
 					s '('
@@ -990,7 +974,7 @@ local function resolvebitops(ctx)
 		s(k)
 	end
 	s '\ndo local bitlib = '
-	if jitbit then
+	if ctx.shared.config.jitbit then
 		s 'require "bit"'
 	else
 		s 'bit32'
@@ -1041,7 +1025,7 @@ local function tempvarname(ctx, index)
 	return n
 end
 
-return function(t)
+return function(t, config)
 	if t.type ~= "file" then
 		return nil, "top-most node is not a 'file' node"
 	end
@@ -1061,6 +1045,7 @@ return function(t)
 			nexttempvar = 0,
 			errors = list(),
 			usedbitops = {},
+			config = config,
 		},
 	}
 	
