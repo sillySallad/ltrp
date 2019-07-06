@@ -110,23 +110,28 @@ local function lex(src)
 	local linestart = 1
 	
 	local inmultilinecomment = false
+	local multilinecommenttoken = false
 	
 	local p = 1
 	while p <= #src do
 		local c = get(src, p)
 		
-		if inmultilinecomment or get(src, p, p+2) == '//' then -- singleline comment/end multiline comment
-			while c ~= '\n' and c ~= '\r' and c ~= '\0' do
+		do -- singleline comment/end multiline comment
+			local commentloop = false
+			local singlelinecomment = get(src, p, p+2) == '//'
+			while (inmultilinecomment or singlelinecomment) and not (c == '\n' or c == '\r' or c == '\0') do
+				commentloop = true
 				if inmultilinecomment and get(src, p, p+2) == "*/" then
 					p = p + 2
 					inmultilinecomment = false
 					goto cont
 				end
-				p = p + 1 
+				p = p + 1
 				c = get(src, p)
 			end
-			-- goto cont
-			-- drop down to whitespace
+			if commentloop then
+				goto cont
+			end
 		end
 		
 		if iswhitespace(c) then -- spaces/newlines
@@ -158,6 +163,7 @@ local function lex(src)
 		end
 		
 		if get(src, p, p+2) == '/*' then -- begin mutiline comment
+			multilinecommenttoken = token(src, line, p, linestart, nil, get(src, p, p+2), nil)
 			p = p + 2
 			inmultilinecomment = true
 			goto cont
@@ -336,6 +342,10 @@ local function lex(src)
 	end
 	
 	out(token(src, line, p, linestart, "eof", ""))
+	
+	if inmultilinecomment then
+		return nil, multilinecommenttoken:makecomplaint("unclosed multiline comment:"), out
+	end
 	
 	return out
 end
