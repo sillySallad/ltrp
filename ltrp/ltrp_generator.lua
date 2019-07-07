@@ -230,7 +230,7 @@ function node(t, ctx)
 	elseif ty == "identifier" then
 		local b, c = vartype(ctx, t.value)
 		if b and c == "global" then
-			return "_ENV." .. t.value
+			return ctx.shared.envprefix .. t.value
 		end
 		return t.value
 	elseif ty == "postincrement" or ty == "postdecrement" then
@@ -436,7 +436,7 @@ function node(t, ctx)
 				if not b then
 					ctx.locals[t.name] = true
 				elseif c == "global" then
-					o '_ENV.'
+					o(ctx.shared.envprefix)
 				end
 			end
 			o(t.name)
@@ -622,7 +622,7 @@ function node(t, ctx)
 			local floorf
 			local b,e = vartype(ctx, 'floor')
 			if b then
-				if e == 'global' then floorf = '_ENV.floor('
+				if e == 'global' then floorf = ctx.shared.envprefix .. 'floor('
 				elseif e == 'local' then floorf = 'floor(' end
 			else floorf = 'math.floor(' end
 			local fake = shallowtablecopy(t)
@@ -754,7 +754,7 @@ function node(t, ctx)
 		if not b then
 			ctx.locals[t.to] = true
 		elseif c == "global" then
-			o '_ENV.'
+			o(ctx.shared.envprefix)
 		end
 		o(t.to)
 		o ' = require '
@@ -790,7 +790,7 @@ function node(t, ctx)
 			if not b then
 				ctx.locals[v] = true
 			elseif c == "global" then
-				o '_ENV.'
+				o(ctx.shared.envprefix)
 			end
 			o(v)
 			o ' = '
@@ -1033,6 +1033,8 @@ local function tempvarname(ctx, index)
 	return n
 end
 
+local lua53 = _VERSION == "Lua 5.3"
+
 return function(t, config)
 	if t.type ~= "file" then
 		return nil, "top-most node is not a 'file' node"
@@ -1054,6 +1056,7 @@ return function(t, config)
 			errors = list(),
 			usedbitops = {},
 			config = config,
+			envprefix = (config.envstr or (lua53 and '_ENV' or '_G')) .. '.'
 		},
 	}
 	

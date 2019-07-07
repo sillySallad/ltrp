@@ -17,6 +17,7 @@ local detected_config = {
 	jitbit = luajit,
 	bit53 = lua53,
 	intdiv = lua53,
+	envstr = lua53 and "_ENV" or "_G",
 }
 
 local function compile(src, config)
