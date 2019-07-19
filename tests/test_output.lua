@@ -86,6 +86,21 @@ outputTest("simple_glob_multi_assign_numbers",
 
 -- /VARIABLE DECLARATIONS
 
+outputTest("from_use_temporary",
+	[[local f
+	function f()
+		local tx, ty, temp0
+		temp0 = foo.bar
+		tx = temp0.x
+		ty = temp0.y
+		noop()
+	end]], {
+	[[func f() {
+		from foo.bar use x as tx, y as ty
+		noop()
+	}]]
+})
+
 -- function TestOutput:test_empty_function()
 -- 	assertOutput({
 -- 		"func f();"
