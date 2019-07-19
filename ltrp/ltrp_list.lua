@@ -17,7 +17,7 @@ function mt.prepend(self, x)
 	local n = self.n + 1
 	self.n = n
 	for i = n, 2, -1 do
-		self[n] = self[n-1]
+		self[i] = self[i-1]
 	end
 	self[1] = x
 	return self
