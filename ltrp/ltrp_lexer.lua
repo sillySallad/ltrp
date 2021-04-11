@@ -325,6 +325,9 @@ local function lex(src)
 					end
 					s(c)
 					q = p + 1
+				elseif c == '\n' or c == '\r' or c == '\0' then
+					return nil, token(src, line, begin, linestart, nil, get(src, begin, p), nil)
+						:makecomplaint("unterminated string literal"), out
 				end
 			end
 			p = p + 1
