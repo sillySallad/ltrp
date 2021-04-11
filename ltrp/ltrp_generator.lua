@@ -203,6 +203,10 @@ local function functionbody(body, ctx, params, vararg)
 	o(s)
 end
 
+local function chartohexescape(ch)
+	return ("\\x%02X"):format(ch:byte())
+end
+
 function node(t, ctx)
 	local ty = t.type
 	-- print("node: " .. ty)
@@ -959,7 +963,7 @@ function node(t, ctx)
 	elseif ty == "number" then
 		return list()(tostring(t.value))
 	elseif ty == "string" then
-		return ("%q"):format(t.value):gsub('\n','n')
+		return ("%q"):format(t.value):gsub('\n','n'):gsub('([\x80-\xFF])', chartohexescape)
 	elseif ty == "bool" then
 		return t.value and "true" or "false"
 	elseif ty == "break" then
