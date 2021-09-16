@@ -601,7 +601,7 @@ function ast:paren_expression()
 		local expr = self:anticipate("expression")
 		self:expect "rparen"
 		self "pop"
-		return expr or true
+		return expr
 	end
 	return self "pull"
 end
