@@ -65,6 +65,7 @@ local keywords = {
 	import = "import", use = "use",
 	func = "func", ret = "ret",
 	['goto'] = "goto",
+	at = "at",
 }
 
 local specialchars = {

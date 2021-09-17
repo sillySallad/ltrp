@@ -621,6 +621,8 @@ function ast:index(t)
 	elseif self "lsquare" then
 		key = self:anticipate("expression", "index")
 		self:expect("rsquare", "closing square bracket")
+	elseif self "at" then
+		key = self:anticipate("expression_noassign", "index")
 	else
 		return self "pull"
 	end
@@ -782,7 +784,11 @@ end
 
 function ast:expression()
 	return self:assignexpression()
-		or self:binop_or()
+		or self:expression_noassign()
+end
+
+function ast:expression_noassign()
+	return self:binop_or()
 end
 
 function ast:assignexpression()
