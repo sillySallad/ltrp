@@ -516,16 +516,10 @@ function ast:lvalue()
 end
 
 function ast:bottomexpression()
-	local rel = self "push"
-	local expr = self:ident()
+	return self:ident()
 		or self:literal()
 		or self:vararg()
 		or self:functionstatement(true)
-	if expr then
-		self "pop"
-		return expr
-	end
-	return self "pull"
 end
 
 function ast:vararg()
