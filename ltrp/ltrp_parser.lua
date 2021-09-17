@@ -995,6 +995,10 @@ function ast:tableliteral()
 					self "push"
 					local key = self:ident() or self:literal()
 					if self "assign" then
+						if key.type == "identifier" then
+							-- this is a bit of a bodge, but it works
+							key.type = "string"
+						end
 						self "pop"
 						local value = self:anticipate("expression", "value")
 						keys(key)

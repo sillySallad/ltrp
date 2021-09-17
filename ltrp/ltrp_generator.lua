@@ -390,7 +390,7 @@ function node(t, ctx)
 			s '\n' (ctx.indent)
 			if v.type == "number" and v.value == nextkey then
 				nextkey = nextkey + 1
-			elseif v.type == "identifier" then
+			elseif isstringandvalidident(v) then
 				s(v.value) ' = '
 			else
 				s '[' (node(v, ctx)) '] = '
