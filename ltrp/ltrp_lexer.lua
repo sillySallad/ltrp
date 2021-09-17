@@ -79,7 +79,7 @@ local specialchars = {
 	
 	['#'] = "len",
 	
-	['&&'] = "and", ['||'] = "or", ['!'] = "not",
+	['&&'] = "and", ['||'] = "or", ['!'] = "exclamation",
 	
 	['&'] = "band", ['|'] = "bor", ['^'] = "bxor", ['~'] = "bnot",
 	['<<'] = "lshift", ['>>'] = "rshift", ['>>>'] = "arshift",

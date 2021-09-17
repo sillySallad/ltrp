@@ -403,37 +403,37 @@ function ast:call(t)
 	if self "newline" then
 		return self "pull"
 	end
-	if self "lparen" then
-		local args = list()
+	local args = nil
+	if self(true).type == "exclamation" then
+		self "exclamation"
+		args = list()
+	elseif self "lparen" then
+		args = list()
 		if not self "rparen" then
 			repeat
 				args(self:anticipate("expression", "argument"))
 			until not self "comma"
 			self:expect("rparen")
 		end
-		self "pop"
-		return {
-			type = "call",
-			func = t,
-			args = args,
-			token = rel,
-		}
 	else
+		local space = self(true)
 		local arg = self:expression()
 		if not arg then return self "pull" end
-		do -- negation-check
+		do -- negation- and inversion-check
 			local a = arg
 			while a.type == "binop" do
 				a = a.left
 			end
-			if a.type == "negate" then
+			if a.token.type == "sub" or (a.token.type == "exclamation" and space.type ~= "space") then
 				return self "pull"
 			end
 		end
-		local args = list()(arg)
+		args = list()(arg)
 		while self "comma" do
 			args(self:anticipate("expression", "argument"))
 		end
+	end
+	if args then
 		self "pop"
 		return {
 			type = "call",
@@ -566,7 +566,11 @@ end
 
 function ast:pre_expr_unop()
 	local rel = self "push"
-	local op = (self "sub" and "negate" or self "not" and "not" or self "bnot" and "bnot" or self "len" and "len")
+	local op = self "sub" and "negate"
+		or self "not" and "not"
+		or self "exclamation" and "not"
+		or self "bnot" and "bnot"
+		or self "len" and "len"
 	local lval = false
 	if not op then
 		op = (self "increment" and "preincrement")
@@ -719,7 +723,21 @@ function ast:methodcall(t)
 	end
 	do
 		local space = self(true)
-		if t.type == "identifier" and space.type == "lparen" then
+		if t.type == "identifier" and space.type == "exclamation" then
+			self "exclamation"
+			self "pop"
+			return {
+				type = "call",
+				table = {
+					type = "identifier",
+					value = "self",
+					token = t.token,
+				},
+				key = t.value,
+				args = list(),
+				token = rel,
+			}
+		elseif t.type == "identifier" and space.type == "lparen" then
 			local args = self:anticipate 'parenargs'
 			self "pop"
 			return {
@@ -739,7 +757,10 @@ function ast:methodcall(t)
 	end
 	local name = self:expect "ident"
 	local args
-	if self "lparen" then
+	if self(true).type == "exclamation" then
+		self "exclamation"
+		args = list()
+	elseif self "lparen" then
 		args = list()
 		if not self "rparen" then
 			repeat
