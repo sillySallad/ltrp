@@ -1097,7 +1097,13 @@ function ast:functionstatement(ignorename)
 		else
 			colon = self "colon"
 		end
-		local params, vararg = self:parenparams()
+		local params, vararg
+		if self "exclamation" then
+			params, vararg = list(), false
+		end
+		if not params then
+			params, vararg = self:parenparams()
+		end
 		if not params then
 			params, vararg = self:anticipate("noparenparams", "function parameters")
 		end
