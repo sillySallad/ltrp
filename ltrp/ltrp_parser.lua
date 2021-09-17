@@ -404,8 +404,7 @@ function ast:call(t)
 		return self "pull"
 	end
 	local args = nil
-	if self(true).type == "exclamation" then
-		self "exclamation"
+	if self "exclamation" then
 		args = list()
 	elseif self "lparen" then
 		args = list()
@@ -416,15 +415,14 @@ function ast:call(t)
 			self:expect("rparen")
 		end
 	else
-		local space = self(true)
 		local arg = self:expression()
 		if not arg then return self "pull" end
-		do -- negation- and inversion-check
+		do -- negation-check
 			local a = arg
 			while a.type == "binop" do
 				a = a.left
 			end
-			if a.token.type == "sub" or (a.token.type == "exclamation" and space.type ~= "space") then
+			if a.token.type == "sub" then
 				return self "pull"
 			end
 		end
@@ -562,7 +560,6 @@ function ast:pre_expr_unop()
 	local rel = self "push"
 	local op = self "sub" and "negate"
 		or self "not" and "not"
-		or self "exclamation" and "not"
 		or self "bnot" and "bnot"
 		or self "len" and "len"
 	local lval = false
@@ -751,8 +748,7 @@ function ast:methodcall(t)
 	end
 	local name = self:expect "ident"
 	local args
-	if self(true).type == "exclamation" then
-		self "exclamation"
+	if self "exclamation" then
 		args = list()
 	elseif self "lparen" then
 		args = list()
