@@ -1082,7 +1082,10 @@ function ast:functionstatement(ignorename)
 		else
 			colon = self "colon"
 		end
-		local params, vararg = self:anticipate("parenparams", "function parameters")
+		local params, vararg = self:parenparams()
+		if not params then
+			params, vararg = self:anticipate("noparenparams", "function parameters")
+		end
 		if colon then
 			params:prepend "self"
 		end
@@ -1100,6 +1103,25 @@ function ast:functionstatement(ignorename)
 		}
 	end
 	return self "pull"
+end
+
+function ast:noparenparams()
+	local rel = self "push"
+	local params = list()
+	local vararg = false
+	repeat
+		vararg = self "vararg"
+		if vararg then
+			local t = self()
+			if t.type == "comma" then
+				complain(self, "there may be no additional parameters after a vararg", t)
+			end
+			break
+		end
+		params(self:expect 'ident')
+	until not self "comma"
+	self "pop"
+	return params, vararg
 end
 
 function ast:parenparams()
